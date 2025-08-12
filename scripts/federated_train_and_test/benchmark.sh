@@ -23,24 +23,11 @@ fi
 # fi
 
 # List of datasets and strategies
-DATASET_NAME_LIST=("baseline")
-# STRATEGY_LIST=(
-#     "FedAvg"
-#     "FedHeadAvg"
-#     "FedNeckAvg"
-#     "FedBackboneAvg"
-#     "FedNeckHeadAvg"
-#     "FedBackboneHeadAvg"
-#     "FedBackboneNeckAvg"
-#     "FedMedian"
-#     "FedHeadMedian"
-#     "FedNeckMedian"
-#     "FedBackboneMedian"
-#     "FedNeckHeadMedian"
-#     "FedBackboneHeadMedian"
-#     "FedBackboneNeckMedian"
-# )
-STRATEGY_LIST=("FedBackboneAvg" "FedNeckMedian")
+DATASET_NAME_LIST=("redistributed_CAMMA_cholec")
+STRATEGY_LIST=(
+    "FedAvg"
+)
+# STRATEGY_LIST=("FedBackboneAvg" "FedNeckMedian")
 
 # Partition the data, comment out if already partitioned
 # python3 FedYOLO/data_partitioner/fed_split.py >> logs/data_partition_log.txt 2>&1
@@ -54,11 +41,11 @@ for DATASET_NAME in "${DATASET_NAME_LIST[@]}"; do
         echo "===================================================================="
         
         # Modify the config.py file
-        sed -i "s/^DATASET_NAME = .*/DATASET_NAME = '${DATASET_NAME}'/" $CLIENT_CONFIG_FILE
+        sed -i "s/^DETECTION_CLIENTS = {.*}/DETECTION_CLIENTS = {'${DATASET_NAME}': 2}/" $CLIENT_CONFIG_FILE
         sed -i "s/^\s*'strategy': .*/    'strategy': '${STRATEGY}',/" $CLIENT_CONFIG_FILE
         
         # Run the base bash file
-        bash "scripts/federated_train_and_test/run.sh"
+        bash "scripts/federated_train_and_test/train.sh"
 
         # newline
         echo ""
