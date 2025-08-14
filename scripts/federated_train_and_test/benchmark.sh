@@ -43,6 +43,7 @@ for DATASET_NAME in "${DATASET_NAME_LIST[@]}"; do
         
         # Modify the config.py file
         sed -i "s/^DETECTION_CLIENTS = {.*}/DETECTION_CLIENTS = {'${DATASET_NAME}': ${NUM_CLIENTS}}/" $CLIENT_CONFIG_FILE
+        sed -i "s/^DATASET_NAME = .*/DATASET_NAME = '${DATASET_NAME}'/" $CLIENT_CONFIG_FILE
         sed -i "s/^\s*'strategy': .*/    'strategy': '${STRATEGY}',/" $CLIENT_CONFIG_FILE
         
         # Run the base bash file
