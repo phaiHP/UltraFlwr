@@ -22,7 +22,8 @@ fi
 #     exit 1
 # fi
 
-# List of datasets and strategies
+# Configuration variables
+NUM_CLIENTS=3
 DATASET_NAME_LIST=("redistributed_CAMMA_cholec")
 STRATEGY_LIST=(
     "FedAvg"
@@ -41,7 +42,7 @@ for DATASET_NAME in "${DATASET_NAME_LIST[@]}"; do
         echo "===================================================================="
         
         # Modify the config.py file
-        sed -i "s/^DETECTION_CLIENTS = {.*}/DETECTION_CLIENTS = {'${DATASET_NAME}': 2}/" $CLIENT_CONFIG_FILE
+        sed -i "s/^DETECTION_CLIENTS = {.*}/DETECTION_CLIENTS = {'${DATASET_NAME}': ${NUM_CLIENTS}}/" $CLIENT_CONFIG_FILE
         sed -i "s/^\s*'strategy': .*/    'strategy': '${STRATEGY}',/" $CLIENT_CONFIG_FILE
         
         # Run the base bash file
