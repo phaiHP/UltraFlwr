@@ -1,6 +1,9 @@
 # Ignore all datasets except baseline
 datasets/*
 !datasets/baseline
+!datasets/mnist
+!datasets/pose
+!datasets/seg
 
 # Ignore everything in runs, logs, weights and results folder
 runs/*
