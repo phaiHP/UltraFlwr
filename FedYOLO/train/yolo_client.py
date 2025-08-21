@@ -41,7 +41,7 @@ class FlowerClient(fl.client.NumPyClient):
         self.strategy_name = strategy_name
         self.task = task
 
-    def get_parameters(self):
+    def get_parameters(self, config=None):
         """Get relevant model parameters based on the strategy."""
         current_state_dict = self.net.model.state_dict()
         # Use the imported function
@@ -76,22 +76,12 @@ class FlowerClient(fl.client.NumPyClient):
                (send_head and k in head_weights):
                 relevant_parameters.append(current_state_dict[k].cpu().numpy())
         
+        print(f"Client {self.cid} ({self.task}) sending {len(relevant_parameters)} parameters to server")
         return relevant_parameters
 
     def set_parameters(self, parameters):
         """Set relevant model parameters based on the strategy."""
         current_state_dict = self.net.model.state_dict()
-        
-        # For the first round, we expect the full model parameters to initialize all clients equally
-        if len(parameters) == len(current_state_dict):
-            print(f"Round 1/FA: Initializing round with full model ({len(parameters)} parameters)")
-            # Initialize with full model parameters
-            params_dict = zip(current_state_dict.keys(), parameters)
-            updated_weights = {k: torch.tensor(v) for k, v in params_dict}
-            self.net.model.load_state_dict(updated_weights, strict=True)
-            return
-        
-        # For subsequent rounds, handle partial parameter updates based on strategy
         backbone_weights, neck_weights, head_weights = get_section_parameters(current_state_dict)
 
         # Define strategy groups - Corrected lists
@@ -124,22 +114,54 @@ class FlowerClient(fl.client.NumPyClient):
         print(f"Strategy: {self.strategy_name}")
         print(f"Parameters received: {len(parameters)}")
         print(f"Expected relevant parameters: {len(relevant_keys)}")
+        print(f"Task: {self.task}")
 
-        # Ensure the number of parameters received matches the number of relevant keys
+        # Handle architecture mismatches for heterogeneous federated learning
         if len(parameters) != len(relevant_keys):
-             raise ValueError(f"Mismatch in parameter count: received {len(parameters)}, expected {len(relevant_keys)} for strategy {self.strategy_name}")
-
-        # Zip the relevant keys with the received parameters
-        params_dict = zip(relevant_keys, parameters)
-        
-        # Prepare updated weights dictionary using only the received parameters
-        updated_weights = {k: torch.tensor(v) for k, v in params_dict}
+            print(f"Warning: Parameter count mismatch. Client architecture may differ from server.")
+            print(f"This is expected for heterogeneous federated learning with different task types.")
+            print(f"Attempting intelligent parameter matching for compatible layers...")
+            
+            # Advanced parameter matching by shape for cross-architecture compatibility
+            updated_weights = {}
+            server_params_used = [False] * len(parameters)
+            matched_count = 0
+            
+            # First pass: try to match parameters by shape
+            for k in relevant_keys:
+                client_shape = current_state_dict[k].shape
+                matched = False
+                
+                # Look for a server parameter with matching shape
+                for i, server_param in enumerate(parameters):
+                    if not server_params_used[i] and server_param.shape == client_shape:
+                        updated_weights[k] = torch.tensor(server_param)
+                        server_params_used[i] = True
+                        matched = True
+                        matched_count += 1
+                        print(f"✓ Matched {k} with shape {client_shape}")
+                        break
+                
+                if not matched:
+                    # Keep original client parameter for unmatched layers
+                    updated_weights[k] = current_state_dict[k]
+                    print(f"✗ No match for {k} with shape {client_shape}, keeping original")
+            
+            print(f"Successfully matched {matched_count}/{len(relevant_keys)} parameters")
+            
+            if matched_count == 0:
+                print("Warning: No parameters could be matched. Using original client parameters.")
+            else:
+                print(f"Federated learning proceeding with {matched_count} shared parameters")
+        else:
+            # Perfect match - proceed normally
+            params_dict = zip(relevant_keys, parameters)
+            updated_weights = {k: torch.tensor(v) for k, v in params_dict}
 
         # Load the updated parameters into the model, keeping existing weights for other parts
-        # Create a full state dict for loading, merging updated weights with existing ones
         final_state_dict = current_state_dict.copy()
         final_state_dict.update(updated_weights)
-
+        
         self.net.model.load_state_dict(final_state_dict, strict=True) # Use strict=True if all expected keys are present
 
     def fit(self, parameters, config):

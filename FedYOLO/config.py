@@ -45,16 +45,16 @@ def generate_client_config(num_clients, dataset_path, client_tasks):
     }
 
 # Base Configuration
-BASE = "/nfs/home/yli/BIBM_2025"
+BASE = "/home/localssk23"
 HOME = f"{BASE}/UltraFlwr"
 
 # --- Multi-client, multi-task configuration ---
 
-# Specify number of clients per dataset as a dictionary
-DETECTION_CLIENTS = {'baseline': 2}         # dataset_name: num_clients
-SEGMENTATION_CLIENTS = {} 
-POSE_CLIENTS = {} 
-CLASSIFICATION_CLIENTS = {}
+# Specify number of clients per dataset as a dictionary  
+DETECTION_CLIENTS = {'baseline': 1}         # dataset_name: num_clients
+SEGMENTATION_CLIENTS = {'seg': 1}                   # No segmentation partitions available
+POSE_CLIENTS = {'pose': 1}                  # Use client_0 partition  
+CLASSIFICATION_CLIENTS = {'mnist': 1}       # Use client_0 partition
 
 
 client_specs = []
@@ -137,7 +137,7 @@ SERVER_CONFIG = {
 }
 
 YOLO_CONFIG = {
-    'batch_size': 2,
-    'epochs': 1,
+    'batch_size': 1,
+    'epochs': 2,
     'seed_offset': 3
 }

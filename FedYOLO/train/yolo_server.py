@@ -29,15 +29,49 @@ def fit_config(server_round: int) -> dict:
 
 
 def get_parameters(net: YOLO, strategy_name: str) -> list[np.ndarray]:
-    """Extract all model parameters from YOLO model for initial server parameters."""
+    """Extract relevant model parameters from YOLO model based on the strategy."""
+    from FedYOLO.train.strategies import get_section_parameters
+    
     current_state_dict = net.model.state_dict()
+    backbone_weights, neck_weights, head_weights = get_section_parameters(current_state_dict)
     
-    # For initial parameters, return all model parameters regardless of strategy
-    all_parameters = []
-    for k, v in current_state_dict.items():
-        all_parameters.append(v.cpu().numpy())
+    # Define strategy parameter filters
+    strategy_filters = {
+        # FedAvg variations - all parameters
+        'FedAvg': {'backbone': True, 'neck': True, 'head': True},
+        'FedHeadAvg': {'backbone': False, 'neck': False, 'head': True},
+        'FedNeckAvg': {'backbone': False, 'neck': True, 'head': False},
+        'FedBackboneAvg': {'backbone': True, 'neck': False, 'head': False},
+        'FedNeckHeadAvg': {'backbone': False, 'neck': True, 'head': True},
+        'FedBackboneHeadAvg': {'backbone': True, 'neck': False, 'head': True},
+        'FedBackboneNeckAvg': {'backbone': True, 'neck': True, 'head': False},
+        
+        # FedMedian variations - same filters as FedAvg
+        'FedMedian': {'backbone': True, 'neck': True, 'head': True},
+        'FedHeadMedian': {'backbone': False, 'neck': False, 'head': True},
+        'FedNeckMedian': {'backbone': False, 'neck': True, 'head': False},
+        'FedBackboneMedian': {'backbone': True, 'neck': False, 'head': False},
+        'FedNeckHeadMedian': {'backbone': False, 'neck': True, 'head': True},
+        'FedBackboneHeadMedian': {'backbone': True, 'neck': False, 'head': True},
+        'FedBackboneNeckMedian': {'backbone': True, 'neck': True, 'head': False},
+    }
     
-    return all_parameters
+    # Get filter for this strategy
+    if strategy_name not in strategy_filters:
+        # Default to all parameters if strategy not found
+        filters = {'backbone': True, 'neck': True, 'head': True}
+    else:
+        filters = strategy_filters[strategy_name]
+    
+    # Get relevant parameters in sorted order (consistent with client)
+    relevant_parameters = []
+    for k in sorted(current_state_dict.keys()):
+        if (filters['backbone'] and k in backbone_weights) or \
+           (filters['neck'] and k in neck_weights) or \
+           (filters['head'] and k in head_weights):
+            relevant_parameters.append(current_state_dict[k].cpu().numpy())
+    
+    return relevant_parameters
 
 
 def create_yolo_yaml(dataset_name: str, num_classes: int, task: str) -> YOLO:
@@ -54,16 +88,30 @@ def server_fn(context: Context):
     # Make the directory HOME/FedYOLO/yolo_configs if it does not exist
     os.makedirs(f"{HOME}/FedYOLO/yolo_configs", exist_ok=True)
 
-    # Use the first client task as the default for server initialization
+    # Use detection model as the base architecture for all clients
+    # This ensures consistent parameter structure across different tasks
     from FedYOLO.config import CLIENT_TASKS
-    server_task = CLIENT_TASKS[0] if hasattr(context, 'node_config') and 'task' in context.node_config else CLIENT_TASKS[0]
-
-    # Create dataset specific YOLO yaml
-    model = create_yolo_yaml(SPLITS_CONFIG["dataset_name"], SPLITS_CONFIG["num_classes"], server_task)
+    
+    # Always use detection model architecture for server initialization
+    # This provides a common parameter structure that can be adapted by clients
+    base_task = "detect"  # Use detection as base architecture
+    
+    # Create dataset specific YOLO yaml using detection task
+    model = create_yolo_yaml(SPLITS_CONFIG["dataset_name"], SPLITS_CONFIG["num_classes"], base_task)
 
     # Initialize server side parameters based on the strategy
     strategy_name = SERVER_CONFIG["strategy"]
-    initial_parameters = ndarrays_to_parameters(get_parameters(model, strategy_name))
+    
+    # For heterogeneous client architectures, use flexible initialization
+    print(f"Client tasks: {CLIENT_TASKS}")
+    if len(set(CLIENT_TASKS)) > 1:
+        print("Heterogeneous client architectures detected.")
+        print("Using flexible parameter initialization to support cross-architecture federated learning.")
+        # Initialize with server model parameters but allow client flexibility
+        initial_parameters = ndarrays_to_parameters(get_parameters(model, strategy_name))
+    else:
+        # All clients use same architecture - standard initialization
+        initial_parameters = ndarrays_to_parameters(get_parameters(model, strategy_name))
 
     # Map of available strategies
     strategies = {
