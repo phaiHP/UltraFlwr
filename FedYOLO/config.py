@@ -52,7 +52,7 @@ def generate_client_config(num_clients, dataset_path, client_tasks):
     }
 
 # Base Configuration
-BASE = "/home/yang/Desktop"
+BASE = "/home/localssk23"
 HOME = f"{BASE}/UltraFlwr"
 
 # --- Multi-client, multi-task configuration ---
@@ -73,7 +73,12 @@ for ds, n_clients in SEGMENTATION_CLIENTS.items():
         client_specs.append({'dataset_name': ds, 'task': 'segment', 'client_idx': i})
 for ds, n_clients in POSE_CLIENTS.items():
     for i in range(n_clients):
-        client_specs.append({'dataset_name': ds, 'task': 'pose', 'client_idx': i})
+        # Fix: Pose dataset has test data in client_2, not client_0
+        if ds == 'pose':
+            client_idx = 2  # Use client_2 partition which has test data
+        else:
+            client_idx = i
+        client_specs.append({'dataset_name': ds, 'task': 'pose', 'client_idx': client_idx})
 for ds, n_clients in CLASSIFICATION_CLIENTS.items():
     for i in range(n_clients):
         client_specs.append({'dataset_name': ds, 'task': 'classify', 'client_idx': i}) 
@@ -140,7 +145,7 @@ SERVER_CONFIG = {
     'sample_fraction': 1.0,
     'min_num_clients': NUM_CLIENTS,
     'max_num_clients': NUM_CLIENTS * 2,  # Adjusted based on number of clients
-    'strategy': 'FedBackboneMedian',
+    'strategy': 'FedBackboneMedian',  # Example strategy
 }
 
 YOLO_CONFIG = {

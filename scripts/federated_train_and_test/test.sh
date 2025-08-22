@@ -66,8 +66,7 @@ sed -i "s|^BASE = .*|BASE = \"$PATH_CONTAINING_PROJECT\"|" "$CLIENT_CONFIG_FILE"
 # DATASET_NAME_LIST=("mnist")
 # STRATEGY_LIST=("FedAvg" "FedHeadAvg" "FedHeadMedian" "FedNeckAvg" "FedNeckMedian" "FedBackboneAvg" "FedBackboneMedian" "FedNeckHeadAvg" "FedNeckHeadMedian")
 STRATEGY_LIST=(
-    "FedAvg"
-    "FedHeadAvg"
+    "FedBackboneMedian"
 )
 
 # Number of clients for client-dependent tests
