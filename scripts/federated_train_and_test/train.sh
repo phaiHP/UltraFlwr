@@ -61,8 +61,14 @@ start_app () {
 start_supernode() {
     CLIENT_CID=$1
     # Fetch client-specific data path and dataset name from config.py
-    CLIENT_DATA_PATH=$(python3 -c "from FedYOLO.config import CLIENT_CONFIG; print(CLIENT_CONFIG[$CLIENT_CID]['data_path'])")
-    CLIENT_DATASET_NAME=$(python3 -c "from FedYOLO.config import CLIENT_CONFIG; print(CLIENT_CONFIG[$CLIENT_CID]['dataset_name'])") # Fetch dataset_name
+    CLIENT_DATA_PATH=$(python3 -c "from FedYOLO.config import CLIENT_CONFIG; import sys; print(CLIENT_CONFIG.get($CLIENT_CID, {}).get('data_path', '')); sys.exit(0)" 2>/dev/null)
+    CLIENT_DATASET_NAME=$(python3 -c "from FedYOLO.config import CLIENT_CONFIG; import sys; print(CLIENT_CONFIG.get($CLIENT_CID, {}).get('dataset_name', '')); sys.exit(0)" 2>/dev/null)
+
+    # Check if we got valid values
+    if [[ -z "$CLIENT_DATA_PATH" || -z "$CLIENT_DATASET_NAME" ]]; then
+        echo "Error: Could not get client configuration for client $CLIENT_CID"
+        return 1
+    fi
 
     # Use client-specific dataset name for the log file
     CLIENT_LOG="logs/client_${CLIENT_CID}_log_${CLIENT_DATASET_NAME}_${STRATEGY_NAME}.txt"
@@ -94,7 +100,14 @@ start_superlink
 sleep 2
 
 # Start clients based on CLIENT_CONFIG
-for CLIENT_CID in $(python3 -c "from FedYOLO.config import CLIENT_CONFIG; print(' '.join(map(str, CLIENT_CONFIG.keys())))"); do
+CLIENT_IDS=$(python3 -c "from FedYOLO.config import CLIENT_CONFIG; import sys; print(' '.join(map(str, CLIENT_CONFIG.keys()))); sys.exit(0)" 2>/dev/null)
+
+if [[ -z "$CLIENT_IDS" ]]; then
+    echo "Error: Could not get client IDs from configuration"
+    exit 1
+fi
+
+for CLIENT_CID in $CLIENT_IDS; do
     start_supernode "$CLIENT_CID"
 done
 

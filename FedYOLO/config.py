@@ -20,16 +20,23 @@ def get_nc_from_yaml(yaml_path, task=None):
 
     return num_classes
 
-def get_nc_from_classification_dataset(dataset_path):
-    """Get number of classes by counting folders in train directory for classification datasets."""
-    train_dir = f"{dataset_path}/train"
-    try:
-        # Count number of directories in train folder
-        num_classes = len([d for d in os.listdir(train_dir) if os.path.isdir(os.path.join(train_dir, d))])
-        return num_classes
-    except Exception as e:
-        print(f"Error getting number of classes from {train_dir}: {e}")
-        return None
+def get_nc_from_classification_dataset(data_path):
+    """Get number of classes from a classification dataset by checking train directory structure."""
+    # For classification datasets, check if we have a partition structure
+    if os.path.exists(data_path) and 'partitions' in os.listdir(data_path):
+        # Look for the first client partition that has a train directory
+        partitions_path = os.path.join(data_path, 'partitions')
+        for partition in os.listdir(partitions_path):
+            partition_path = os.path.join(partitions_path, partition)
+            if os.path.isdir(partition_path):
+                train_path = os.path.join(partition_path, 'train')
+                if os.path.exists(train_path):
+                    # Count the number of class directories
+                    classes = [d for d in os.listdir(train_path) 
+                             if os.path.isdir(os.path.join(train_path, d))]
+                    return len(classes)
+    
+    return 0
 
 def generate_client_config(num_clients, dataset_path, client_tasks):
     """Dynamically generate client configuration for n clients with specific tasks."""
@@ -45,7 +52,7 @@ def generate_client_config(num_clients, dataset_path, client_tasks):
     }
 
 # Base Configuration
-BASE = "/home/localssk23"
+BASE = "/home/yang/Desktop"
 HOME = f"{BASE}/UltraFlwr"
 
 # --- Multi-client, multi-task configuration ---
