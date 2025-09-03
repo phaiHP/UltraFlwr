@@ -58,10 +58,10 @@ HOME = f"{BASE}/UltraFlwr"
 # --- Multi-client, multi-task configuration ---
 
 # Specify number of clients per dataset as a dictionary  
-DETECTION_CLIENTS = {'baseline': 1}         # dataset_name: num_clients
-SEGMENTATION_CLIENTS = {'seg': 1}                   # No segmentation partitions available
-POSE_CLIENTS = {'pose': 1}                  # Use client_0 partition  
-CLASSIFICATION_CLIENTS = {'mnist': 1}       # Use client_0 partition
+DETECTION_CLIENTS = {'redistributed_CAMMA_cholec': 3}         # dataset_name: num_clients
+SEGMENTATION_CLIENTS = {}                   # No segmentation partitions available
+POSE_CLIENTS = {}                  # Use client_0 partition  
+CLASSIFICATION_CLIENTS = {}       # Use client_0 partition
 
 
 client_specs = []
@@ -114,7 +114,7 @@ CLIENT_TASKS = [CLIENT_CONFIG[i]['task'] for i in range(NUM_CLIENTS)]
 CLIENT_RATIOS = [1/NUM_CLIENTS] * NUM_CLIENTS
 
 # For backward compatibility, set the first detection, segmentation, pose, and classification dataset names
-DATASET_NAME = 'baseline'
+DATASET_NAME = list(DETECTION_CLIENTS.keys())[0] if DETECTION_CLIENTS else ''
 DATASET_NAME_SEG = list(SEGMENTATION_CLIENTS.keys())[0] if SEGMENTATION_CLIENTS else ''
 DATASET_NAME_POSE = list(POSE_CLIENTS.keys())[0] if POSE_CLIENTS else ''
 DATASET_NAME_CLS = list(CLASSIFICATION_CLIENTS.keys())[0] if CLASSIFICATION_CLIENTS else ''
@@ -141,15 +141,15 @@ SPLITS_CONFIG = {
 
 SERVER_CONFIG = {
     'server_address': "0.0.0.0:8080",
-    'rounds': 2,
+    'rounds': 20,
     'sample_fraction': 1.0,
     'min_num_clients': NUM_CLIENTS,
     'max_num_clients': NUM_CLIENTS * 2,  # Adjusted based on number of clients
-    'strategy': 'FedBackboneMedian',  # Example strategy
+    'strategy': 'FedAvg',
 }
 
 YOLO_CONFIG = {
-    'batch_size': 1,
-    'epochs': 2,
-    'seed_offset': 3
+    'batch_size': 8,
+    'epochs': 20,
+    'seed_offset': 0
 }
