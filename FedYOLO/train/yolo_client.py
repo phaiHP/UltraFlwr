@@ -154,9 +154,27 @@ class FlowerClient(fl.client.NumPyClient):
             else:
                 print(f"Federated learning proceeding with {matched_count} shared parameters")
         else:
-            # Perfect match - proceed normally
+            # Perfect match - proceed normally with shape validation
             params_dict = zip(relevant_keys, parameters)
-            updated_weights = {k: torch.tensor(v) for k, v in params_dict}
+            updated_weights = {}
+            for k, v in params_dict:
+                expected_shape = current_state_dict[k].shape
+                param_array = v
+                
+                # Ensure parameter has correct shape
+                if param_array.shape != expected_shape:
+                    # Try to reshape if possible
+                    if param_array.size == torch.Size(expected_shape).numel():
+                        print(f"Reshaping parameter {k} from {param_array.shape} to {expected_shape}")
+                        param_array = param_array.reshape(expected_shape)
+                    else:
+                        print(f"ERROR: Cannot reshape {k}: received shape {param_array.shape}, expected {expected_shape}")
+                        print(f"       Received size: {param_array.size}, expected size: {torch.Size(expected_shape).numel()}")
+                        # Keep original parameter as fallback
+                        updated_weights[k] = current_state_dict[k]
+                        continue
+                
+                updated_weights[k] = torch.tensor(param_array)
 
         # Load the updated parameters into the model, keeping existing weights for other parts
         final_state_dict = current_state_dict.copy()

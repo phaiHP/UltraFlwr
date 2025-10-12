@@ -120,15 +120,9 @@ class BaseYOLOSaveStrategy:
             net = self.load_and_update_model(aggregated_parameters)
             save_model_checkpoint(server_round, model=net.model)
             
-            # For strategies that update all parts (like FedAvg), send back the full model
-            # For partial strategies, send back only the relevant parts
-            if self.update_backbone and self.update_neck and self.update_head:
-                # Send full model parameters
-                full_parameters = [val.cpu().numpy() for _, val in net.model.state_dict().items()]
-                return ndarrays_to_parameters(full_parameters), aggregated_metrics
-            else:
-                # Send only relevant partial parameters (same as what was aggregated)
-                return aggregated_parameters, aggregated_metrics
+            # Always send back the aggregated parameters (not the full model state dict)
+            # This ensures we only send the parameters that were actually aggregated
+            return aggregated_parameters, aggregated_metrics
 
         return aggregated_parameters, aggregated_metrics
 
