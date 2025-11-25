@@ -1,10 +1,3 @@
-# Ignore all datasets except baseline
-datasets/*
-!datasets/baseline
-!datasets/mnist
-!datasets/pose
-!datasets/seg
-
 # Ignore old output directories (deprecated in favor of experiments/)
 runs/*
 logs/*

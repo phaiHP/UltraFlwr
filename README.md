@@ -14,24 +14,6 @@ For more details on the motivation behind this project, see [docs/motivation.md]
 
 ## Quick Start
 
-### Standard Federated Training
-
-```bash
-# Install
-pip install -e
-
-# Partition datasets (one-time setup)
-fedyolo-partition
-
-# Run federated training
-fedyolo-train
-
-# Run all tests automatically (tests all clients, all scoring styles)
-fedyolo-test
-```
-
-### With Self-Supervised Learning (SSL) Pretraining
-
 ```bash
 # Install
 pip install -e .
