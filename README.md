@@ -16,7 +16,7 @@ For more details on the motivation behind this project, see [docs/motivation.md]
 
 ```bash
 # Install
-pip install -e .
+uv pip install -e . # or just pip install -e .
 
 # Partition datasets (one-time setup)
 fedyolo-partition
