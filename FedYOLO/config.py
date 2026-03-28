@@ -7,22 +7,28 @@ def get_nc_from_yaml(yaml_path):
         data = yaml.safe_load(file)
     return data.get('nc', None)
 
+import os as os_module
+
 def generate_client_config(num_clients, dataset_path):
     """Dynamically generate client configuration for n clients."""
     return {
         i: {
             'cid': i,
-            'data_path': f"{dataset_path}/partitions/client_{i}/data.yaml"
+            'data_path': os_module.path.join(dataset_path, 'partitions', f'client_{i}', 'data.yaml')
         }
         for i in range(num_clients)
     }
 
+import os
+
 # Base Configuration
-BASE = ""  # YOUR PATH CONTAINING UltraFlwr
-HOME = f"{BASE}/UltraFlwr"
-DATASET_NAME = 'baseline'
-DATASET_PATH = f'{HOME}/datasets/{DATASET_NAME}'
-DATA_YAML = f"{DATASET_PATH}/data.yaml"
+# AUTO: infer base path from this config file location (works on Windows/Linux).
+# If you want to override, set BASE to the parent folder of the `UltraFlwr` repo.
+BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+HOME = os.path.join(BASE, 'UltraFlwr')
+DATASET_NAME = 'pest24'
+DATASET_PATH = os.path.join(HOME, 'datasets', DATASET_NAME)
+DATA_YAML = os.path.join(DATASET_PATH, 'data.yaml')
 NC = get_nc_from_yaml(DATA_YAML)
 
 # Number of clients can be easily modified here
@@ -43,7 +49,9 @@ SPLITS_CONFIG = {
 CLIENT_CONFIG = generate_client_config(NUM_CLIENTS, DATASET_PATH)
 
 SERVER_CONFIG = {
-    'server_address': "0.0.0.0:8080",
+    # Use localhost for client connections (0.0.0.0 is not routable for clients)
+    # and it will still bind correctly for the server.
+    'server_address': "127.0.0.1:8080",
     'rounds': 2,
     'sample_fraction': 1.0,
     'min_num_clients': NUM_CLIENTS,
@@ -52,6 +60,6 @@ SERVER_CONFIG = {
 }
 
 YOLO_CONFIG = {
-    'batch_size': 8,
-    'epochs': 1,
+    'batch_size': 4,
+    'epochs': 100,
 }

@@ -23,7 +23,8 @@ else
 fi
 
 # List of datasets and strategies
-DATASET_NAME_LIST=("baseline")
+# DATASET_NAME_LIST=("baseline")
+DATASET_NAME_LIST=("pest24")
 # STRATEGY_LIST=(
 #     "FedAvg"
 #     "FedHeadAvg"

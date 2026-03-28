@@ -47,8 +47,15 @@ def main() -> None:
     create_yolo_yaml(SPLITS_CONFIG["dataset_name"], SPLITS_CONFIG["num_classes"])
 
     # Initialize server side parameters
-    initial_parameters = ndarrays_to_parameters(get_parameters(YOLO()))
-
+    # initial_parameters = ndarrays_to_parameters(get_parameters(YOLO()))
+#     initial_parameters = ndarrays_to_parameters(get_parameters(
+#     YOLO(f"{HOME}/FedYOLO/yolo_configs/yolo11n_{SPLITS_CONFIG['dataset_name']}.yaml")
+# ))
+    initial_parameters = ndarrays_to_parameters(
+    get_parameters(
+        YOLO(f"{HOME}/FedYOLO/yolo_configs/yolo11n_{SPLITS_CONFIG['dataset_name']}.yaml", task="detect")
+    )
+)
     # Map of available strategies
     strategies = {
         # FedAvg variations

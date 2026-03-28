@@ -2,10 +2,10 @@ import argparse
 import warnings
 from collections import OrderedDict
 import torch
+import os
 import flwr as fl
 from ultralytics import YOLO
 from FedYOLO.config import SERVER_CONFIG, YOLO_CONFIG, SPLITS_CONFIG, HOME
-from FedYOLO.test.extract_final_save_from_client import extract_results_path
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -70,7 +70,12 @@ def get_section_parameters(state_dict: OrderedDict) -> Tuple[dict, dict, dict]:
 class FlowerClient(fl.client.NumPyClient):
     def __init__(self, cid, data_path, dataset_name, strategy_name):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.net = YOLO()
+        # self.net = YOLO()
+        #self.net = YOLO(f"{HOME}/FedYOLO/yolo_configs/yolo11n_{dataset_name}.yaml")
+        # init client model
+        self.net = YOLO(f"{HOME}/FedYOLO/yolo_configs/yolo11n_{dataset_name}.yaml", task="detect")
+        # self.net = YOLO(f"{HOME}/FedYOLO/yolo_configs/yolo11n_{dataset_name}.yaml", task="detect")
+
         self.cid = cid
         self.data_path = data_path
         self.dataset_name=dataset_name
@@ -182,16 +187,36 @@ class FlowerClient(fl.client.NumPyClient):
             del self.net
             torch.cuda.empty_cache()
             # get the path of the saved model weight
-            logs_path = f"{HOME}/logs/client_{self.cid}_log_{self.dataset_name}_{self.strategy_name}.txt"
-            weights_path = extract_results_path(logs_path)
-            weights = f"{HOME}/{weights_path}/weights/best.pt"
-            print(weights)
-
-            self.net = YOLO(weights)
+            weights_path = f"{HOME}/{self.strategy_name}_{self.dataset_name}_{self.cid}/train/weights/best.pt"
+            # if os.path.exists(weights_path):
+            #     print(f"Loading weights from {weights_path}")
+            #     self.net = YOLO(weights_path)
+            # else:
+            #     print(f"Weights file {weights_path} not found, using initial model.")
+            #     self.net = YOLO("yolo11n.pt")
+            # if os.path.exists(weights_path):
+            #     self.net = YOLO(weights_path)
+            # else:
+            #     self.net = YOLO(f"{HOME}/FedYOLO/yolo_configs/yolo11n_{self.dataset_name}.yaml")
+            # khi load weights:
+            if os.path.exists(weights_path):
+                self.net = YOLO(weights_path, task="detect")
+            else:
+                self.net = YOLO(f"{HOME}/FedYOLO/yolo_configs/yolo11n_{self.dataset_name}.yaml", task="detect")
 
         self.set_parameters(parameters) # this needs to be modified so we only asign parts of the weights
         train(self.net, self.data_path, self.cid, f"{self.strategy_name}_{self.dataset_name}_{self.cid}")
         return self.get_parameters(), 10, {}
+
+    # def evaluate(self, parameters, config):
+    #     self.set_parameters(parameters)
+    #     # Run validation on the test data
+    #     results = self.net.val(data=self.data_path, split='test')
+    #     # Extract metrics
+    #     loss = 0.0  # Placeholder, as YOLO val doesn't return loss directly
+    #     num_examples = len(results)  # or results.box.n if available
+    #     metrics = {"mAP": results.box.map, "mAP50": results.box.map50, "mAP75": results.box.map75}
+    #     return loss, num_examples, metrics
 
 
 def main():

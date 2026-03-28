@@ -18,7 +18,7 @@ else
 fi
 
 # List of datasets and strategies (similar to benchmark.sh)
-DATASET_NAME_LIST=("baseline")
+DATASET_NAME_LIST=("pest24")
 # STRATEGY_LIST=("FedAvg" "FedHeadAvg" "FedHeadMedian" "FedNeckAvg" "FedNeckMedian" "FedBackboneAvg" "FedBackboneMedian" "FedNeckHeadAvg" "FedNeckHeadMedian")
 STRATEGY_LIST=("FedMedian")
 

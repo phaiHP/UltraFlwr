@@ -120,6 +120,14 @@ class BaseYOLOSaveStrategy:
             net = self.load_and_update_model(aggregated_parameters)
             save_model_checkpoint(server_round, model=net.model)
             
+            # # Evaluate the aggregated model
+            # results = net.val(data=f'{HOME}/datasets/{SPLITS_CONFIG["dataset_name"]}/data.yaml', split="test", verbose=False)
+            # mp, mr, map50, map5095 = results.box.mean_results()
+            # aggregated_metrics['precision'] = mp
+            # aggregated_metrics['recall'] = mr
+            # aggregated_metrics['mAP50'] = map50
+            # aggregated_metrics['mAP50-95'] = map5095
+            
             # For strategies that update all parts (like FedAvg), send back the full model
             # For partial strategies, send back only the relevant parts
             if self.update_backbone and self.update_neck and self.update_head:
